@@ -1,51 +1,54 @@
-# Deployment guide (Vercel + Neon + GitHub Actions)
+# Deployment guide (Vercel app + Render Postgres)
 
-## 1. Prepare GitHub (you run Git)
+## Why local works but Vercel fails (`Can't reach database server at base`)
 
-```bash
-# From project root — run these yourself
-git init   # only if needed
-git add .
-git commit -m "feat: CollabDocs local-first assignment submission"
-git branch -M main
-git remote add origin https://github.com/<YOU>/collabdocs.git
-git push -u origin main
+Your app on **Vercel** and database on **Render** are different networks.
+
+| URL type | Looks like | Works from |
+| --- | --- | --- |
+| **External** (correct for Vercel) | `…@dpg-xxxx-a.oregon-postgres.render.com/db` | Local + Vercel |
+| **Internal** (wrong for Vercel) | `…@dpg-xxxx-a/db` (no `.render.com`) | **Only** Render services |
+
+If Vercel has the Internal URL (or a truncated/bad value), Prisma fails — sometimes with a nonsense host like `base`.
+
+## Fix on Vercel (do this exactly)
+
+1. Open [Render Dashboard](https://dashboard.render.com) → your Postgres → **Connect**.
+2. Copy **External Database URL** (not Internal).
+3. Append SSL if missing: `?sslmode=require`
+4. Open [Vercel](https://vercel.com) → your project → **Settings → Environment Variables**.
+5. Set `DATABASE_URL` for **Production** (and Preview):
+   - Paste the External URL only
+   - **Do not** wrap it in quotes (`"..."`)
+   - Host must contain `.oregon-postgres.render.com` (or `.render.com`)
+6. Also set:
+   - `AUTH_SECRET` — `openssl rand -base64 32`
+   - `AUTH_URL` — `https://your-app.vercel.app` (no trailing slash issues)
+   - `AI_PROVIDER=groq`
+   - `GROQ_API_KEY`
+   - `NEXT_PUBLIC_AUTHOR_NAME`, `NEXT_PUBLIC_GITHUB_URL`, `NEXT_PUBLIC_LINKEDIN_URL`
+7. **Redeploy** (Deployments → … → Redeploy). Env changes do nothing until redeploy.
+8. Open **Runtime Logs** and look for:
+   ```text
+   [prisma] connecting host=dpg-….oregon-postgres.render.com db=/collabdocs_hh3x
+   ```
+   If you see an Internal-looking host or a bad host, fix `DATABASE_URL` again.
+
+## Example shape (password redacted)
+
+```text
+postgresql://collabdocs_hh3x_user:****@dpg-XXXX-a.oregon-postgres.render.com/collabdocs_hh3x?sslmode=require
 ```
 
-## 2. Neon database
+## If the Next.js app is also on Render
 
-1. Create project at https://neon.tech  
-2. Copy connection string → `DATABASE_URL`  
-3. Locally or in CI: `npx prisma db push`
+Then you *can* use the Internal URL. For **Vercel**, always use External.
 
-## 3. Vercel
+## After env is fixed
 
-1. Import the GitHub repo at https://vercel.com/new  
-2. Framework: Next.js (auto)  
-3. Build command uses `npm run build` (`prisma generate && next build`)  
-4. Add env vars (Production + Preview):
+```bash
+# Optional from laptop against External URL
+npx prisma db push
+```
 
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `AUTH_URL` = `https://<project>.vercel.app`
-- `AI_PROVIDER=groq`
-- `GROQ_API_KEY`
-- `AI_MODEL=llama-3.3-70b-versatile`
-- `NEXT_PUBLIC_AUTHOR_NAME`
-- `NEXT_PUBLIC_GITHUB_URL`
-- `NEXT_PUBLIC_LINKEDIN_URL`
-- `NEXT_PUBLIC_AUTHOR_EMAIL`
-
-5. Deploy → copy Live URL into README.
-
-## 4. CI
-
-Pushing to `main` runs `.github/workflows/ci.yml` (typecheck, lint, tests, build).
-
-## 5. Submission
-
-Share:
-
-1. GitHub repository URL  
-2. Live Vercel URL  
-3. Confirm footer shows your name, GitHub, LinkedIn  
+Then hit Register on the Vercel URL again.
