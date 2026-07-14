@@ -5,9 +5,12 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { APP_NAME } from "@/config/app";
+import {
+  loginFormSchema,
+  type LoginFormValues,
+} from "@/validators/password";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,23 +23,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-type FormValues = z.infer<typeof schema>;
-
 export default function LoginClient() {
   const router = useRouter();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    mode: "onBlur",
     defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit(values: FormValues) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  async function onSubmit(values: LoginFormValues) {
     setError(null);
     const result = await signIn("credentials", {
       ...values,
@@ -57,26 +60,61 @@ export default function LoginClient() {
           <CardTitle className="text-2xl">{APP_NAME}</CardTitle>
           <CardDescription>Sign in to your workspace</CardDescription>
         </CardHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "login-email-error" : undefined}
+                {...register("email")}
+              />
+              {errors.email ? (
+                <p
+                  id="login-email-error"
+                  className="text-sm text-destructive"
+                  role="alert"
+                >
+                  {errors.email.message}
+                </p>
+              ) : null}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                {...form.register("password")}
+                aria-invalid={!!errors.password}
+                aria-describedby={
+                  errors.password ? "login-password-error" : undefined
+                }
+                {...register("password")}
               />
+              {errors.password ? (
+                <p
+                  id="login-password-error"
+                  className="text-sm text-destructive"
+                  role="alert"
+                >
+                  {errors.password.message}
+                </p>
+              ) : null}
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            <Button className="w-full" type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+            <Button className="w-full" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
             <p className="text-sm text-muted-foreground">
               No account?{" "}

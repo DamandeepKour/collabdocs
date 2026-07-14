@@ -10,7 +10,7 @@ import { authConfig } from "@/server/auth/auth.config";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).max(128),
+  password: z.string().min(6).max(128),
 });
 
 function buildProviders(): Provider[] {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { getPrisma } from "@/server/db/prisma";
+import { strongPasswordSchema } from "@/validators/password";
 import {
   clientIp,
   handleRouteError,
@@ -12,7 +13,7 @@ import {
 const registerSchema = z.object({
   name: z.string().trim().min(1).max(80),
   email: z.string().email().max(255),
-  password: z.string().min(8).max(128),
+  password: strongPasswordSchema,
 });
 
 export async function POST(request: Request) {
@@ -25,7 +26,10 @@ export async function POST(request: Request) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return Response.json(
-        { ok: false, error: { message: "Email already registered", code: "EXISTS" } },
+        {
+          ok: false,
+          error: { message: "Email already registered", code: "EXISTS" },
+        },
         { status: 409 },
       );
     }

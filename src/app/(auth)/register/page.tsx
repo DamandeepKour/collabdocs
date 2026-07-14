@@ -5,9 +5,13 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { APP_NAME } from "@/config/app";
+import {
+  PASSWORD_RULES_HINT,
+  registerFormSchema,
+  type RegisterFormValues,
+} from "@/validators/password";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,23 +24,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const schema = z.object({
-  name: z.string().min(1).max(80),
-  email: z.string().email(),
-  password: z.string().min(8).max(128),
-});
-
-type FormValues = z.infer<typeof schema>;
-
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerFormSchema),
+    mode: "onBlur",
     defaultValues: { name: "", email: "", password: "" },
   });
 
-  async function onSubmit(values: FormValues) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = form;
+
+  async function onSubmit(values: RegisterFormValues) {
     setError(null);
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -45,7 +48,10 @@ export default function RegisterPage() {
     });
     const json = await res.json();
     if (!res.ok || !json.ok) {
-      setError(json?.error?.message ?? "Registration failed");
+      const validationMsg =
+        json?.error?.details?.fieldErrors?.password?.[0] ??
+        json?.error?.message;
+      setError(validationMsg ?? "Registration failed");
       return;
     }
     const login = await signIn("credentials", {
@@ -68,25 +74,77 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl">Create {APP_NAME} account</CardTitle>
           <CardDescription>Local-first docs with secure sync</CardDescription>
         </CardHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" {...form.register("name")} />
+              <Input
+                id="name"
+                autoComplete="name"
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "name-error" : undefined}
+                {...register("name")}
+              />
+              {errors.name ? (
+                <p id="name-error" className="text-sm text-destructive" role="alert">
+                  {errors.name.message}
+                </p>
+              ) : null}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...form.register("email")} />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
+                {...register("email")}
+              />
+              {errors.email ? (
+                <p id="email-error" className="text-sm text-destructive" role="alert">
+                  {errors.email.message}
+                </p>
+              ) : null}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...form.register("password")} />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                maxLength={8}
+                aria-invalid={!!errors.password}
+                aria-describedby={
+                  errors.password ? "password-error password-hint" : "password-hint"
+                }
+                {...register("password")}
+              />
+              <p id="password-hint" className="text-xs text-muted-foreground">
+                {PASSWORD_RULES_HINT}
+              </p>
+              {errors.password ? (
+                <p
+                  id="password-error"
+                  className="text-sm text-destructive"
+                  role="alert"
+                >
+                  {errors.password.message}
+                </p>
+              ) : null}
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
-            <Button className="w-full" type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Creating…" : "Create account"}
+            <Button className="w-full" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating…" : "Create account"}
             </Button>
             <p className="text-sm text-muted-foreground">
               Already registered?{" "}
