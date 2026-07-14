@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { APP_DESCRIPTION, APP_NAME } from "@/config/app";
+import { AUTHOR } from "@/config/author";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,18 +11,31 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const PHASES = [
-  { phase: 1, label: "Project setup", status: "done" as const },
-  { phase: 2, label: "Auth & RBAC", status: "done" as const },
-  { phase: 3, label: "Document CRUD", status: "done" as const },
-  { phase: 4, label: "Offline engine", status: "done" as const },
-  { phase: 5, label: "Sync engine", status: "done" as const },
-  { phase: 6, label: "Realtime collaboration", status: "done" as const },
-  { phase: 7, label: "Version history", status: "done" as const },
-  { phase: 8, label: "AI features", status: "done" as const },
-  { phase: 9, label: "Performance", status: "done" as const },
-  { phase: 10, label: "Testing", status: "done" as const },
-  { phase: 11, label: "Deployment", status: "pending" as const },
+const FEATURES = [
+  {
+    title: "Local-first",
+    body: "IndexedDB is the source of truth. Open, edit, and close with zero network blocking.",
+  },
+  {
+    title: "Background sync",
+    body: "Queued pushes with backoff and version conflicts that never wipe offline work.",
+  },
+  {
+    title: "Version history",
+    body: "Snapshots, timeline, compare, and safe restore as a new version bump.",
+  },
+  {
+    title: "RBAC",
+    body: "Owner, Editor, Viewer — viewers cannot push sync or edit state.",
+  },
+  {
+    title: "AI add-ons",
+    body: "Summarize, rewrite, grammar, continue, tags, chat — powered by Groq / AI SDK.",
+  },
+  {
+    title: "Production-minded",
+    body: "Zod validation, payload limits, rate limits, security headers, CI + Vercel.",
+  },
 ];
 
 export default function HomePage() {
@@ -35,7 +49,7 @@ export default function HomePage() {
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
         <div className="text-lg font-semibold tracking-tight">{APP_NAME}</div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">Phases 1–10 complete</Badge>
+          <Badge variant="secondary">Assignment ready</Badge>
           <Button asChild size="sm">
             <Link href="/login">Sign in</Link>
           </Button>
@@ -48,6 +62,11 @@ export default function HomePage() {
             {APP_NAME}
           </h1>
           <p className="text-lg text-muted-foreground">{APP_DESCRIPTION}</p>
+          <p className="text-sm text-muted-foreground">
+            Built by{" "}
+            <span className="font-medium text-foreground">{AUTHOR.name}</span>
+            . See the footer for GitHub and LinkedIn.
+          </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button asChild>
               <Link href="/register">Get started</Link>
@@ -58,30 +77,29 @@ export default function HomePage() {
           </div>
         </div>
 
-        <Card id="roadmap" className="max-w-3xl">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f) => (
+            <Card key={f.title} className="border-border/70">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{f.title}</CardTitle>
+                <CardDescription>{f.body}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+
+        <Card className="max-w-3xl border-border/70">
           <CardHeader>
-            <CardTitle>Implementation roadmap</CardTitle>
+            <CardTitle>Stack</CardTitle>
             <CardDescription>
-              Core product phases are implemented. Deployment config is optional Phase 11.
+              Next.js 16 · React · TypeScript · Tailwind/shadcn · PostgreSQL ·
+              Auth.js · AI SDK (Groq)
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {PHASES.map((item) => (
-                <li
-                  key={item.phase}
-                  className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-sm"
-                >
-                  <span>
-                    <span className="font-medium">Phase {item.phase}</span>
-                    <span className="text-muted-foreground"> — {item.label}</span>
-                  </span>
-                  <Badge variant={item.status === "done" ? "default" : "outline"}>
-                    {item.status}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
+          <CardContent className="text-sm text-muted-foreground">
+            Docs: <code className="text-xs">docs/security.md</code>,{" "}
+            <code className="text-xs">docs/DEPLOY.md</code>,{" "}
+            <code className="text-xs">docs/architecture.md</code>
           </CardContent>
         </Card>
       </section>

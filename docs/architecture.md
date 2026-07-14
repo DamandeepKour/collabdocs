@@ -2,40 +2,50 @@
 
 ## Principles
 
-1. **Local-first** — IndexedDB (and related local stores) are the source of truth for document content. Opening, editing, and closing a document must never block on the network.
+1. **Local-first** — IndexedDB is the source of truth. Opening, editing, and closing never block on the network.
 2. **Optimistic UI** — Mutations apply locally first; sync reconciles in the background.
-3. **RBAC** — Roles: `OWNER`, `EDITOR`, `VIEWER`. Viewers must never write, sync, or upload mutations.
-4. **Defense in depth** — Zod validation, payload limits, scoped Prisma queries, Auth.js sessions, security headers.
-5. **Provider abstraction** — AI and other integrations switch via environment variables.
+3. **RBAC** — `OWNER` / `EDITOR` / `VIEWER`. Viewers never write, sync, or upload mutations.
+4. **Defense in depth** — Zod validation, payload limits, scoped Prisma queries, optional Postgres RLS, Auth.js, security headers.
+5. **AI provider abstraction** — `AI_PROVIDER=groq|openai|gemini`.
 
 ## Layers
 
 | Layer | Responsibility |
 | --- | --- |
 | `app/` | Routes, layouts, Route Handlers |
-| `features/` | Domain UI + hooks co-located by capability |
-| `services/` | Use-cases / business rules |
-| `repositories/` | Persistence adapters (Prisma, IndexedDB) |
-| `server/` | Auth, DB client, security helpers |
-| `validators/` | Shared Zod contracts |
+| `features/` | Domain UI + hooks |
+| `services/` | Business rules |
+| `repositories/` | Prisma / access checks |
+| `server/` | Auth, DB, security |
+| `validators/` | Zod contracts |
 
-## Sync (Phases 4–5)
+## Sync
 
-- Offline queue with retry + exponential backoff
-- Version vectors / base-version conflict detection
-- Partial sync + background reconciliation
-- Recovery after refresh from durable local storage
+- Coalesced offline queue (one pending op per document)
+- Retry + exponential backoff
+- `baseVersion` conflict detection (HTTP 409) without destroying local work
+- Recovery after refresh from IndexedDB
 
-## Realtime (Phase 6)
+## Realtime
 
-- WebSocket / Socket.IO presence, cursors, typing
-- Connection state + automatic reconnection
+- SSE presence hub (online users, typing, connection + reconnect)
+- Viewers may observe presence but cannot push document state
 
-## Versions (Phase 7)
+## Versions
 
-- Snapshots with safe restore that does not clobber collaborator edits
+- Explicit snapshots + timeline
+- Safe restore → new version bump (no silent overwrite of collaborators)
 
-## AI (Phase 8)
+## AI
 
-- Single `AI_PROVIDER` env (`openai` \| `gemini` \| `groq`)
-- Feature adapters: summarize, rewrite, grammar, continue, bullets, meeting notes, title, tags, chat
+- Vercel AI SDK; default **Groq** free tier (`llama-3.3-70b-versatile`)
+
+## Performance
+
+- Dynamic imports for AI / versions / invite panels
+- Debounced local save + coalesced sync (prevents typing lag / false conflicts)
+- SSR for chrome; client editor island
+
+## Security
+
+See `docs/security.md` (OOM payload guards, RLS, tenant isolation).

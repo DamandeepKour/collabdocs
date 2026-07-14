@@ -1,0 +1,21 @@
+name: Deploy Preview (Vercel)
+
+# Deploys via Vercel Git integration are preferred.
+# This workflow documents / optionally triggers Vercel CLI deploys when secrets exist.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  notify:
+    name: Deployment checklist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reminder
+        run: |
+          echo "Connect this repo to Vercel (Import Project)."
+          echo "Required env: DATABASE_URL, AUTH_SECRET, AUTH_URL, GROQ_API_KEY, AI_PROVIDER=groq"
+          echo "Optional: NEXT_PUBLIC_AUTHOR_NAME, NEXT_PUBLIC_GITHUB_URL, NEXT_PUBLIC_LINKEDIN_URL"
+          echo "After first deploy, run prisma migrate/db push against Neon from CI or Vercel build command."

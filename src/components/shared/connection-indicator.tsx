@@ -12,6 +12,9 @@ function subscribe(cb: () => void) {
   };
 }
 
+/**
+ * Real-time network status for the chrome (a11y live region).
+ */
 export function ConnectionIndicator() {
   const online = useSyncExternalStore(
     subscribe,
@@ -20,7 +23,15 @@ export function ConnectionIndicator() {
   );
 
   return (
-    <Badge variant={online ? "secondary" : "destructive"}>
+    <Badge
+      variant={online ? "secondary" : "destructive"}
+      aria-live="polite"
+      role="status"
+    >
+      <span
+        className={`mr-1.5 inline-block size-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-destructive"}`}
+        aria-hidden
+      />
       {online ? "Online" : "Offline"}
     </Badge>
   );

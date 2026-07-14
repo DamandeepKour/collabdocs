@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/providers/app-providers";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { APP_DESCRIPTION, APP_NAME } from "@/config/app";
 import "./globals.css";
 
@@ -33,8 +34,11 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
-        <AppProviders>{children}</AppProviders>
+      <body className="flex min-h-full flex-col font-sans">
+        <AppProviders>
+          <div className="flex min-h-full flex-1 flex-col">{children}</div>
+          <SiteFooter />
+        </AppProviders>
       </body>
     </html>
   );
